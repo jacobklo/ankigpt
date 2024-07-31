@@ -1,6 +1,6 @@
 image/
 *.apkg
-out/
+output_*
 
 constants.py
 
