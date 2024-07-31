@@ -125,7 +125,15 @@ Please add a lot of Anki's Cloze Delete fields, split the content into 3 cloze f
 
 Use double open curly braces `{{` and double close curly braces `}}` for cloze fields.
 
-Example output 1:
+Do not cloze delete:
+1. Code comments like `# This is a comment`, `'''This is a docstring'''`, `\* This is a comment *\`.
+2. Strings like `"This is a string"`, `'This is a string'`.
+3. Variable names like `my_variable`, `myFunction`.
+4. Keywords like `if`, `else`, `for`, `while`, `def`, `class`, `import`, `from`, `as`, `return`, `yield`, `raise`, `try`, `except`, `finally`, `with`, `assert`, `lambda`, `nonlocal`, `global`, `and`, `or`, `not`, `in`, `is`, `True`, `False`, `None`.
+5. function parameters like `def my_function(param1, param2):`.
+6. cloze delete only the right side of the operators, like `left_index < {{c2::len(left)}}`, `merged = {{c2::[]}}`, `len(arr) // {{c1::2}}`.
+
+Example of a Python console session:
 [Information]:
 ```python
 >>> list(range(10))
@@ -150,31 +158,85 @@ Example output 1:
 {{c3::[0, 3, 6, 9]}}
 ```
 
-Example output 2:
+Example of a Python script snippet:
 [Information]:
 ```python
-def to_bytes(n, length=1, byteorder='big', signed=False):
-    if byteorder == 'little':
-        order = range(length)
-    elif byteorder == 'big':
-        order = reversed(range(length))
-    else:
-        raise ValueError("byteorder must be either 'little' or 'big'")
+def merge_sort(arr):
+    # Base case
+    if len(arr) <= 1:
+        return arr
 
-    return bytes((n >> i*8) & 0xff for i in order)
+    # Recursive case: divide the array into halves
+    mid = len(arr) // 2
+    left_half = merge_sort(arr[:mid])
+    right_half = merge_sort(arr[mid:])
+
+    # Merge the sorted halves
+    return merge(left_half, right_half)
+
+def merge(left, right):
+    merged = []
+    left_index, right_index = 0, 0
+
+    # Merge by comparing elements of both halves
+    while left_index < len(left) and right_index < len(right):
+        if left[left_index] < right[right_index]:
+            merged.append(left[left_index])
+            left_index += 1
+        else:
+            merged.append(right[right_index])
+            right_index += 1
+
+    # Append remaining elements
+    merged.extend(left[left_index:])
+    merged.extend(right[right_index:])
+
+    return merged
+
+# Example usage:
+# arr = [34, 7, 23, 32, 5, 62]
+# sorted_arr = merge_sort(arr)
+# print(sorted_arr)  # Output will be the sorted array
 ```
 
 [Result]:
 ```python
-def to_bytes(n, length=1, byteorder='big', signed=False):
-    if {{c1::byteorder == 'little'}}:
-        {{c1::order = range(length)}}
-    elif {{c1::byteorder == 'big'}}:
-        {{c1::order = reversed(range(length))}}
-    else:
-        {{c2::raise ValueError("byteorder must be either 'little' or 'big'")}}
+def merge_sort(arr):
+    # Base case
+    if len(arr) <= {{c1::1}}:
+        return arr
 
-    return {{c3::bytes((n >> i*8) & 0xff for i in order)}}
+    # Recursive case: divide the array into halves
+    mid = len(arr) // {{c1::2}}
+    left_half = {{c1::merge_sort(arr[:mid])}}
+    right_half = {{c1::merge_sort(arr[mid:])}}
+
+    # Merge the sorted halves
+    return merge({{c1::left_half}}, {{c1::right_half}})
+
+def merge(left, right):
+    merged = {{c2::[]}}
+    left_index, right_index = {{c2::0}}, {{c2::0}}
+
+    # Merge by comparing elements of both halves
+    while left_index < {{c2::len(left)}} and right_index < {{c2::len(right)}}:
+        if left[left_index] < {{c3::right[right_index]}}:
+            {{c3::merged.append(left[left_index])}}
+            left_index += {{c3::1}}
+        else:
+            {{c3::merged.append(right[right_index])}}
+            right_index += {{c3::1}}
+
+    # Append remaining elements
+    merged.extend({{c3::left[left_index:]}})
+    merged.extend({{c3::right[right_index:]}})
+
+    return merged
+
+# Example usage:
+# arr = [34, 7, 23, 32, 5, 62]
+# sorted_arr = merge_sort(arr)
+# print(sorted_arr)  # Output will be the sorted array
 ```
 """
 
@@ -198,7 +260,11 @@ def wait_on_run(client: OpenAI, run: Run, thread: Thread):
             thread_id=thread.id,
             run_id=run.id,
         )
-        time.sleep(0.5)
+        print(f"Run status: {run.id} - {run.status}")
+        time.sleep(2)
+        # if run.status not in ["queued", "in_progress", "completed"]:
+        #     print(run)
+        #     raise Exception(f"Run status: {run.status}")
     return run
 
 

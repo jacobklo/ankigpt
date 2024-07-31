@@ -1,11 +1,16 @@
 from collections import deque
 from typing import List
-import copy, os, csv
+import copy, os, csv, random
 
 import bs4
 
 
 from simplify_html import simplify_html
+
+
+def random_css_color():
+    return "#{:06x}".format(random.randint(0x888888, 0xFFFFFF))
+
 
 def divide_html_file(html_path: str) -> List:
     with open(html_path, 'r', encoding='utf-8') as f:
@@ -58,14 +63,18 @@ def divide_html_file(html_path: str) -> List:
                 code_block.decompose()
 
             # Combine Tables elements into 1 <div>
-            table_div = bs4.BeautifulSoup('<div></div>', 'html.parser')
-            for table in tables:
-                table_div.div.append(table)
+            table_div = ''
+            if tables:
+                table_div = bs4.BeautifulSoup('<div></div>', 'html.parser')
+                for table in tables:
+                    table_div.div.append(table)
             
             # Combine Code Blocks elements into 1 <div>
-            code_block_div = bs4.BeautifulSoup('<div></div>', 'html.parser')
-            for code_block in code_blocks:
-                code_block_div.div.append(code_block)
+            code_block_div = ''
+            if code_blocks:
+                code_block_div = bs4.BeautifulSoup('<div></div>', 'html.parser')
+                for code_block in code_blocks:
+                    code_block_div.div.append(code_block)
 
             result_sections.append([str(header), str(section), str(table_div), str(code_block_div)])
         
@@ -87,16 +96,13 @@ def save_to_fashcards_csv(list_of_htmls: List, output_name: str, csv_headers: Li
         csv_text = csv.reader(f, delimiter='\uFF0C', quotechar='\u3001', quoting=csv.QUOTE_MINIMAL, lineterminator='\u3002\n', doublequote=False)
 
         with open(f'{output_name}.html', 'w', encoding='utf-8') as html_file:
-            
+            colors = []
             for c in csv_text:
-                header, flashcards, flashcard_response_message, tables, cloze_tables_message, code, cloze_code_message,  = c
-                html_file.write(header)
-                html_file.write(f'<div style="background-color: #bfff00">{flashcards}</div>')
-                html_file.write(f'<div style="background-color: ##e0e0e0">{flashcard_response_message}</div>')
-                html_file.write(f'<div style="background-color: #ff00ff">{tables}</div>')
-                html_file.write(f'<div style="background-color: #ff8000">{cloze_tables_message}</div>')
-                html_file.write(f'<div style="background-color: #ff0080">{code}</div>')
-                html_file.write(f'<div style="background-color: #ff8080">{cloze_code_message}</div>')
+                if not colors:
+                    colors = [random_css_color() for _ in range(len(c))]
+                for i, ele in enumerate(c):
+                    html_file.write(f'<div style="background-color: {colors[i]}">{ele}</div>')
+                    html_file.write('\n')
 
 
 def run_create_lists_of_htmls():
