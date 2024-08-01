@@ -1,4 +1,4 @@
-import hashlib, csv
+import hashlib, csv, html
 from typing import List
 
 import genanki
@@ -109,14 +109,15 @@ def csv_to_notes(csv_files: List[str], model: genanki.Model) -> List[genanki.Not
             for i, c in enumerate(csv_text):
                 if i == 0: continue # skip csv header line
 
-                _, flashcards, flashcard_response_message, _, cloze_tables_message, _, cloze_code_message = c
+                header, flashcards, flashcard_response_message, _, cloze_tables_message, _, cloze_code_message = c
 
+                header = html.unescape(header).replace('<p id="table_of_content">','').replace('</p>','').split('>')
                 if flashcard_response_message:
-                    result_notes += [genanki.Note(model=model, fields=[chatgpt_response_cleanup(flashcard_response_message), flashcards])]
+                    result_notes += [genanki.Note(model=model, fields=[chatgpt_response_cleanup(flashcard_response_message), flashcards], tags=header)]
                 if cloze_tables_message:
-                    result_notes += [genanki.Note(model=model, fields=[chatgpt_response_cleanup(cloze_tables_message), flashcards])]
+                    result_notes += [genanki.Note(model=model, fields=[chatgpt_response_cleanup(cloze_tables_message), flashcards], tags=header)]
                 if cloze_code_message:
-                    result_notes += [genanki.Note(model=model, fields=[f'<pre><code>{chatgpt_response_cleanup(cloze_code_message)}</code></pre>', flashcards])]
+                    result_notes += [genanki.Note(model=model, fields=[f'<pre><code>{chatgpt_response_cleanup(cloze_code_message)}</code></pre>', flashcards], tags=header)]
     
     return result_notes
                 

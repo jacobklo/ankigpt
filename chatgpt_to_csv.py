@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 
 from openai import OpenAI
 
@@ -45,51 +46,52 @@ def get_code_info(code):
 
 
 def run_chatGPT(client: OpenAI, info: str, assistant_id: str) -> str:
-    result_response = ''
+  result_response = ''
 
-    if len(info) > 5:
-        while not result_response:
-            thread = client.beta.threads.create(timeout=60)
-            run = submit_message(client, assistant_id, thread, user_message=info)
-            run = wait_on_run(client, run, thread)
-            response = client.beta.threads.messages.list(thread_id=thread.id, order="desc", limit=1)
-            result_response = response.data[0].content[0].text.value
+  if len(info) > 5:
+    while not result_response:
+      thread = client.beta.threads.create(timeout=60)
+      run = submit_message(client, assistant_id, thread, user_message=info)
+      run = wait_on_run(client, run, thread)
+      response = client.beta.threads.messages.list(thread_id=thread.id, order="desc", limit=1)
+      result_response = response.data[0].content[0].text.value
 
-            if run.status != "completed":
-                client.beta.threads.runs.cancel(run_id=run.id, thread_id=thread.id)
-            client.beta.threads.delete(thread_id=thread.id)
-        
-    return result_response
+      if run.status != "completed":
+        client.beta.threads.runs.cancel(run_id=run.id, thread_id=thread.id)
+      client.beta.threads.delete(thread_id=thread.id)
+      
+  return result_response
 
 
 def run_gen_flascards_from_gpt():
-    with open('output_list_of_htmls\stdtypes.csv', 'r', encoding='utf-8') as f:
-        csv_text = csv.reader(f, delimiter='\uFF0C', quotechar='\u3001', quoting=csv.QUOTE_MINIMAL, lineterminator='\u3002\n', doublequote=False)
+  for csv_file in Path('output_list_of_htmls').glob('*.csv'):
+    print(f'-----Processing {csv_file.stem}')
 
-        client = OpenAI()
-        
-        results = []
+    with open(csv_file, 'r', encoding='utf-8') as f:
+      csv_text = csv.reader(f, delimiter='\uFF0C', quotechar='\u3001', quoting=csv.QUOTE_MINIMAL, lineterminator='\u3002\n', doublequote=False)
 
-        for i, c in enumerate(csv_text):
-            if i == 0: continue # skip csv header line
+      client = OpenAI()
+      
+      results = []
 
-            header, flashcards, tables, code = c
+      for i, c in enumerate(csv_text):
+        if i == 0: continue # skip csv header line
 
-            flashcard_response_message = run_chatGPT(client, get_summerizer_info(flashcards), ANKI_FLASHCARD_SUMMARIZER_ASSISTANT_ID)
-            cloze_tables_message = run_chatGPT(client, get_table_info(tables), HTML_CLOZE_CREATOR)
-            cloze_code_message = run_chatGPT(client, get_code_info(code), PYTHON_CODE_CREATOR)
+        header, flashcards, tables, code = c
 
-            results.append([header, flashcards, flashcard_response_message, tables, cloze_tables_message, code, cloze_code_message])
-            print(f'Processed {i}, {header}')
+        flashcard_response_message = run_chatGPT(client, get_summerizer_info(flashcards), ANKI_FLASHCARD_SUMMARIZER_ASSISTANT_ID)
+        cloze_tables_message = run_chatGPT(client, get_table_info(tables), HTML_CLOZE_CREATOR)
+        cloze_code_message = run_chatGPT(client, get_code_info(code), PYTHON_CODE_CREATOR)
 
-            save_to_fashcards_csv(results, 'output_flashcards_with_chatgpt\stdtypes', ['Header', 'Flashcard', 'ClozeFlash', 'Table', 'ClozeTable', 'Code', 'ClozeCode'])
+        results.append([header, flashcards, flashcard_response_message, tables, cloze_tables_message, code, cloze_code_message])
+        print(f'Processed {i}, {header}')
 
+        save_to_fashcards_csv(results, f'output_flashcards_with_chatgpt\{csv_file.stem}', ['Header', 'Flashcard', 'ClozeFlash', 'Table', 'ClozeTable', 'Code', 'ClozeCode'])
 
-
-
+    print(f'-----Finished {csv_file.stem}')
 
 if __name__ == "__main__":
-    run_gen_flascards_from_gpt()
+  run_gen_flascards_from_gpt()
 
         
 

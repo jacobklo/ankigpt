@@ -261,7 +261,7 @@ def wait_on_run(client: OpenAI, run: Run, thread: Thread):
             run_id=run.id,
         )
         print(f"Run status: {run.id} - {run.status}")
-        time.sleep(2)
+        time.sleep(5)
         # if run.status not in ["queued", "in_progress", "completed"]:
         #     print(run)
         #     raise Exception(f"Run status: {run.status}")
